@@ -18,6 +18,23 @@ services:
     networks:
       - tienda_net
 
+  backend:
+    build: ./backend
+    container_name: tienda_backend
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      POSTGRES_HOST: db
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend/app:/code/app
+    depends_on:
+      - db
+    networks:
+      - tienda_net
+
 networks:
   tienda_net:
     driver: bridge
