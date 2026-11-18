@@ -102,6 +102,22 @@ class ProductUpdateStockDiscount(BaseModel):
     stock_despacho: int
     stock_tienda: int
 
+class ProductCreate(BaseModel):
+    sku: str
+    nombre: str
+    marca: str
+    categoria: str
+    descripcion: str
+    especificaciones: Optional[Dict[str, str]] = {}
+    precio_normal: int
+    precio_efectivo: int
+    tiene_descuento: bool = False
+    porcentaje_descuento: int = 0
+    stock_despacho: int = 0
+    stock_tienda: int = 0
+    imagen_url: Optional[str] = "https://images.unsplash.com/photo-1587202372775-e229f172b9d7?w=600"
+
+
 class CartItemSchema(BaseModel):
     product_id: int
     cantidad: int
@@ -173,6 +189,34 @@ def obtener_detalle_producto(sku: str, db: Session = Depends(get_db)):
     return prod
 
 # 3. GESTIÓN DE INVENTARIO Y DESCUENTOS (MODO ADMIN)
+@app.post("/api/products")
+def crear_producto(datos: ProductCreate, db: Session = Depends(get_db)):
+    sku_limpio = datos.sku.strip().upper()
+    existe = db.query(Product).filter(Product.sku == sku_limpio).first()
+    if existe:
+        raise HTTPException(status_code=400, detail=f"Ya existe un producto registrado con el código {sku_limpio}")
+
+    nuevo_prod = Product(
+        sku=sku_limpio,
+        nombre=datos.nombre,
+        marca=datos.marca,
+        categoria=datos.categoria,
+        descripcion=datos.descripcion,
+        especificaciones=datos.especificaciones,
+        precio_normal=datos.precio_normal,
+        precio_efectivo=datos.precio_efectivo,
+        tiene_descuento=datos.tiene_descuento,
+        porcentaje_descuento=datos.porcentaje_descuento if datos.tiene_descuento else 0,
+        stock_despacho=datos.stock_despacho,
+        stock_tienda=datos.stock_tienda,
+        imagen_url=datos.imagen_url or "https://images.unsplash.com/photo-1587202372775-e229f172b9d7?w=600",
+        activo=True
+    )
+    db.add(nuevo_prod)
+    db.commit()
+    db.refresh(nuevo_prod)
+    return {"mensaje": "Producto creado con éxito", "producto": nuevo_prod}
+
 @app.put("/api/inventory/{sku}")
 def actualizar_inventario_y_descuento(sku: str, datos: ProductUpdateStockDiscount, db: Session = Depends(get_db)):
     prod = db.query(Product).filter(Product.sku == sku.upper()).first()

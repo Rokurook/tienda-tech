@@ -43,6 +43,23 @@ export default function App() {
   const [productoDetalle, setProductoDetalle] = useState(null);
   const [vistaAdmin, setVistaAdmin] = useState(false);
   const [editandoProd, setEditandoProd] = useState(null);
+  const [modalNuevoProd, setModalNuevoProd] = useState(false);
+  const [nuevoProd, setNuevoProd] = useState({
+    sku: 'ID-50104',
+    nombre: '',
+    marca: '',
+    categoria: 'Notebooks',
+    descripcion: '',
+    precio_normal: '',
+    precio_efectivo: '',
+    tiene_descuento: false,
+    porcentaje_descuento: 0,
+    stock_despacho: 10,
+    stock_tienda: 5,
+    imagen_url: '',
+    specsTexto: 'Procesador: \nRAM: \nAlmacenamiento: '
+  });
+
 
   // Cargar productos desde el Backend
   const cargarProductos = async () => {
@@ -209,6 +226,64 @@ export default function App() {
     }
   };
 
+  const crearProductoAdmin = async (e) => {
+    e.preventDefault();
+    try {
+      // Convertir líneas "Clave: Valor" a objeto JSON
+      const especificacionesObj = {};
+      nuevoProd.specsTexto.split('\n').forEach((linea) => {
+        const idx = linea.indexOf(':');
+        if (idx > 0) {
+          const clave = linea.slice(0, idx).trim();
+          const valor = linea.slice(idx + 1).trim();
+          if (clave && valor) especificacionesObj[clave] = valor;
+        }
+      });
+
+      const res = await fetch(`${API_URL}/products`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sku: nuevoProd.sku,
+          nombre: nuevoProd.nombre,
+          marca: nuevoProd.marca,
+          categoria: nuevoProd.categoria,
+          descripcion: nuevoProd.descripcion,
+          especificaciones: especificacionesObj,
+          precio_normal: Number(nuevoProd.precio_normal),
+          precio_efectivo: Number(nuevoProd.precio_efectivo),
+          tiene_descuento: nuevoProd.tiene_descuento,
+          porcentaje_descuento: Number(nuevoProd.porcentaje_descuento),
+          stock_despacho: Number(nuevoProd.stock_despacho),
+          stock_tienda: Number(nuevoProd.stock_tienda),
+          imagen_url: nuevoProd.imagen_url.trim() || undefined
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || 'Error al crear producto');
+
+      setModalNuevoProd(false);
+      setNuevoProd({
+        sku: `ID-${Math.floor(50105 + Math.random() * 890)}`,
+        nombre: '',
+        marca: '',
+        categoria: 'Notebooks',
+        descripcion: '',
+        precio_normal: '',
+        precio_efectivo: '',
+        tiene_descuento: false,
+        porcentaje_descuento: 0,
+        stock_despacho: 10,
+        stock_tienda: 5,
+        imagen_url: '',
+        specsTexto: 'Procesador: \nRAM: \nAlmacenamiento: '
+      });
+      cargarProductos();
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
   const categorias = ['Todas', 'Notebooks', 'Almacenamiento', 'Monitores'];
 
   return (
@@ -317,18 +392,28 @@ export default function App() {
         {vistaAdmin ? (
           /* PANEL DE GESTIÓN DE INVENTARIO Y DESCUENTOS */
           <div className="bg-white rounded-xl shadow p-4 sm:p-6">
-            <div className="flex justify-between items-center mb-4">
+            <div className="flex flex-wrap justify-between items-center gap-2 mb-4">
               <h2 className="text-lg sm:text-xl font-bold flex items-center gap-2">
                 <Package className="w-5 h-5 text-emerald-600" />
                 Control de Inventario, Precios y Descuentos
               </h2>
-              <button
-                onClick={() => setVistaAdmin(false)}
-                className="text-sm text-slate-500 hover:text-slate-800 underline"
-              >
-                Volver a la tienda
-              </button>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setModalNuevoProd(true)}
+                  className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-3.5 py-2 rounded-lg text-xs sm:text-sm flex items-center gap-1.5"
+                >
+                  <Plus className="w-4 h-4" /> Nuevo Producto
+                </button>
+                <button
+                  onClick={() => setVistaAdmin(false)}
+                  className="text-sm text-slate-500 hover:text-slate-800 underline"
+                >
+                  Volver a la tienda
+                </button>
+              </div>
             </div>
+
+
 
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse text-sm">
@@ -755,6 +840,193 @@ export default function App() {
                 className="px-4 py-2 bg-emerald-600 text-white font-bold rounded-lg"
               >
                 Guardar Cambios
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+      
+      {/* MODAL CREAR NUEVO PRODUCTO (ADMIN) */}
+      {modalNuevoProd && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+          <form
+            onSubmit={crearProductoAdmin}
+            className="bg-white rounded-2xl max-w-xl w-full max-h-[90vh] overflow-y-auto p-6 space-y-3 text-sm relative"
+          >
+            <button
+              type="button"
+              onClick={() => setModalNuevoProd(false)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-800"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <h3 className="font-bold text-lg text-slate-900">Agregar Nuevo Producto al Catálogo</h3>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label className="text-xs font-semibold">Código ID / SKU *</label>
+                <input
+                  required
+                  type="text"
+                  placeholder="ID-50104"
+                  value={nuevoProd.sku}
+                  onChange={(e) => setNuevoProd({ ...nuevoProd, sku: e.target.value.toUpperCase() })}
+                  className="w-full border rounded-lg p-2 font-mono uppercase"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-semibold">Marca *</label>
+                <input
+                  required
+                  type="text"
+                  placeholder="Ej: Lenovo, Logitech"
+                  value={nuevoProd.marca}
+                  onChange={(e) => setNuevoProd({ ...nuevoProd, marca: e.target.value })}
+                  className="w-full border rounded-lg p-2"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-semibold">Categoría *</label>
+                <select
+                  value={nuevoProd.categoria}
+                  onChange={(e) => setNuevoProd({ ...nuevoProd, categoria: e.target.value })}
+                  className="w-full border rounded-lg p-2 bg-white"
+                >
+                  <option value="Notebooks">Notebooks</option>
+                  <option value="Almacenamiento">Almacenamiento</option>
+                  <option value="Monitores">Monitores</option>
+                  <option value="Periféricos">Periféricos</option>
+                  <option value="Componentes">Componentes</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label className="text-xs font-semibold">Nombre del Producto *</label>
+              <input
+                required
+                type="text"
+                placeholder="Ej: Teclado Mecánico RGB Redragon Kumara K552"
+                value={nuevoProd.nombre}
+                onChange={(e) => setNuevoProd({ ...nuevoProd, nombre: e.target.value })}
+                className="w-full border rounded-lg p-2"
+              />
+            </div>
+
+            <div>
+              <label className="text-xs font-semibold">Descripción General *</label>
+              <textarea
+                required
+                rows="2"
+                placeholder="Breve resumen comercial del equipo..."
+                value={nuevoProd.descripcion}
+                onChange={(e) => setNuevoProd({ ...nuevoProd, descripcion: e.target.value })}
+                className="w-full border rounded-lg p-2"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div>
+                <label className="text-xs font-semibold">Precio Normal ($) *</label>
+                <input
+                  required
+                  type="number"
+                  min="1"
+                  value={nuevoProd.precio_normal}
+                  onChange={(e) => setNuevoProd({ ...nuevoProd, precio_normal: e.target.value })}
+                  className="w-full border rounded-lg p-2"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-semibold">Precio Efectivo ($) *</label>
+                <input
+                  required
+                  type="number"
+                  min="1"
+                  value={nuevoProd.precio_efectivo}
+                  onChange={(e) => setNuevoProd({ ...nuevoProd, precio_efectivo: e.target.value })}
+                  className="w-full border rounded-lg p-2"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-semibold">Stock Despacho *</label>
+                <input
+                  required
+                  type="number"
+                  min="0"
+                  value={nuevoProd.stock_despacho}
+                  onChange={(e) => setNuevoProd({ ...nuevoProd, stock_despacho: e.target.value })}
+                  className="w-full border rounded-lg p-2"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-semibold">Stock Tienda *</label>
+                <input
+                  required
+                  type="number"
+                  min="0"
+                  value={nuevoProd.stock_tienda}
+                  onChange={(e) => setNuevoProd({ ...nuevoProd, stock_tienda: e.target.value })}
+                  className="w-full border rounded-lg p-2"
+                />
+              </div>
+            </div>
+
+            <div className="bg-slate-50 p-3 rounded-lg border flex items-center justify-between">
+              <label className="flex items-center gap-2 font-semibold cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={nuevoProd.tiene_descuento}
+                  onChange={(e) => setNuevoProd({ ...nuevoProd, tiene_descuento: e.target.checked })}
+                />
+                Aplicar Etiqueta de Descuento (%)
+              </label>
+              <input
+                type="number"
+                min="0"
+                max="90"
+                disabled={!nuevoProd.tiene_descuento}
+                value={nuevoProd.porcentaje_descuento}
+                onChange={(e) => setNuevoProd({ ...nuevoProd, porcentaje_descuento: e.target.value })}
+                className="w-20 border rounded p-1.5 text-center bg-white"
+              />
+            </div>
+
+            <div>
+              <label className="text-xs font-semibold">URL de Imagen (Opcional)</label>
+              <input
+                type="url"
+                placeholder="https://... (si se deja vacío usa imagen genérica)"
+                value={nuevoProd.imagen_url}
+                onChange={(e) => setNuevoProd({ ...nuevoProd, imagen_url: e.target.value })}
+                className="w-full border rounded-lg p-2"
+              />
+            </div>
+
+            <div>
+              <label className="text-xs font-semibold">Especificaciones Técnicas (Formato Clave: Valor)</label>
+              <textarea
+                rows="3"
+                value={nuevoProd.specsTexto}
+                onChange={(e) => setNuevoProd({ ...nuevoProd, specsTexto: e.target.value })}
+                className="w-full border rounded-lg p-2 font-mono text-xs"
+              />
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setModalNuevoProd(false)}
+                className="px-4 py-2 border rounded-lg"
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg"
+              >
+                Guardar Producto
               </button>
             </div>
           </form>
