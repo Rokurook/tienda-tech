@@ -35,6 +35,20 @@ services:
     networks:
       - tienda_net
 
+  frontend:
+    build: ./frontend
+    container_name: tienda_frontend
+    restart: unless-stopped
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/index.html:/app/index.html
+    depends_on:
+      - backend
+    networks:
+      - tienda_net
+
 networks:
   tienda_net:
     driver: bridge
