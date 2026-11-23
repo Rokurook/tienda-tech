@@ -1015,10 +1015,10 @@ export default function App() {
             </div>
 
             <div>
-              <label className="text-xs font-semibold">URL de Imagen (Opcional)</label>
+              <label className="text-xs font-semibold">Ruta o URL de Imagen (Opcional)</label>
               <input
-                type="url"
-                placeholder="https://... (si se deja vacío usa imagen genérica)"
+                type="text"
+                placeholder="/images/switches.jpg o https://..."
                 value={nuevoProd.imagen_url}
                 onChange={(e) => setNuevoProd({ ...nuevoProd, imagen_url: e.target.value })}
                 className="w-full border rounded-lg p-2"
