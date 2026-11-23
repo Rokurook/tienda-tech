@@ -225,6 +225,21 @@ export default function App() {
       alert(err.message);
     }
   };
+  
+  const eliminarProductoAdmin = async (sku, nombre) => {
+    if (!window.confirm(`¿Seguro que deseas eliminar ${sku} (${nombre}) del catálogo?`)) return;
+    try {
+      const res = await fetch(`${API_URL}/products/${sku}`, {
+        method: 'DELETE',
+      });
+      if (!res.ok) throw new Error('No se pudo eliminar el producto');
+      cargarProductos();
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+
 
   const crearProductoAdmin = async (e) => {
     e.preventDefault();
@@ -445,12 +460,18 @@ export default function App() {
                       </td>
                       <td className="p-3 font-bold text-blue-600">{p.stock_despacho} un.</td>
                       <td className="p-3 font-bold text-emerald-600">{p.stock_tienda} un.</td>
-                      <td className="p-3">
+                      <td className="p-3 flex gap-2">
                         <button
                           onClick={() => setEditandoProd({ ...p })}
                           className="bg-slate-900 text-white px-3 py-1 rounded text-xs hover:bg-slate-700"
                         >
                           Editar
+                        </button>
+                        <button
+                          onClick={() => eliminarProductoAdmin(p.sku, p.nombre)}
+                          className="bg-rose-600 text-white px-3 py-1 rounded text-xs hover:bg-rose-500"
+                        >
+                          Eliminar
                         </button>
                       </td>
                     </tr>

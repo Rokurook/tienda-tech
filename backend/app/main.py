@@ -232,6 +232,16 @@ def actualizar_inventario_y_descuento(sku: str, datos: ProductUpdateStockDiscoun
     db.refresh(prod)
     return {"mensaje": "Inventario y descuentos actualizados", "producto": prod}
 
+@app.delete("/api/products/{sku}")
+def eliminar_producto(sku: str, db: Session = Depends(get_db)):
+    prod = db.query(Product).filter(Product.sku == sku.upper()).first()
+    if not prod:
+        raise HTTPException(status_code=404, detail="Producto no encontrado")
+    prod.activo = False
+    db.commit()
+    return {"mensaje": f"Producto {prod.sku} eliminado del catálogo"}
+
+
 # 4. VALIDACIÓN DE CUPONES
 @app.get("/api/coupons/{codigo}")
 def validar_cupon(codigo: str, db: Session = Depends(get_db)):
